@@ -1,2 +1,2 @@
 # Ace-Bot
-Ace Motorsports iRacing bot
+Ace Motorsports iRacing Discord bot
