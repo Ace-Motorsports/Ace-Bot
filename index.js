@@ -3,7 +3,9 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { token } = require('./config/config.json');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+const TempChannels = require("@gamers-geek/discord-temp-channels");
+const tempChannels = new TempChannels(client);
 
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
@@ -46,6 +48,12 @@ client.on(Events.InteractionCreate, async interaction => {
 			await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
 		}
 	}
+});
+
+tempChannels.registerChannel("1361955223601545246", {
+    childCategory: "1361955315385630771",
+    childAutoDeleteIfEmpty: true,
+    childFormat: (member, count) => `Race room #${count}`
 });
 
 client.login(token);
