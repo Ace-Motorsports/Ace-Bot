@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
-const { token } = require('./config/config.json');
+const { token, channelId, categoryId } = require('./config/config.json');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 const TempChannels = require("@gamers-geek/discord-temp-channels");
@@ -50,8 +50,8 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-tempChannels.registerChannel("1361955223601545246", {
-    childCategory: "1361955315385630771",
+tempChannels.registerChannel(channelId, {
+    childCategory: categoryId,
     childAutoDeleteIfEmpty: true,
     childFormat: (member, count) => `Race room #${count}`
 });
