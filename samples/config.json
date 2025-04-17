@@ -2,5 +2,7 @@
 	"token": "your-discord-auth-token",
 	"clientId": "your-discord-clientId",
 	"channelId": "temporary-channelId",
-	"categoryId": "categoryid-for-new-temporary-channels"
+	"categoryId": "categoryid-for-new-temporary-channels",	
+	"iracingUser": "your-iracing-username",
+	"iracingPassword": "your-iracing-password"
 }
