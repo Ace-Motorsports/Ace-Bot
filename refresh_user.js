@@ -1,38 +1,74 @@
-const { Tags } = require('./database'); // Ensure this is the correct path to your database file
+const { Tags } = require('./database');
 const { Client, GatewayIntentBits } = require('discord.js');
-const { token, guildId } = require('./config/config.json');
-
+const { discord_token, guildId, iracingUser, iracingPassword } = require('./config/config.json');
+const axios = require('axios');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const CryptoJS = require('crypto-js');
 
-async function readTags() 
-{
-    try {
-        const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID'] });
-        const tagStrings = tagList.map(tag => `[${tag.discord_id}, ${tag.iRacing_ID}]`);
-        return tagStrings;
-    } catch (error) {
-        console.error('Error reading tags:', error);
-        return [];
-    }
+const hash = CryptoJS.SHA256(iracingPassword + iracingUser.toLowerCase());
+const hashInBase64 = CryptoJS.enc.Base64.stringify(hash);
+
+async function auth(username, password) {
+	const response = await axios.post(
+		'https://members-ng.iracing.com/auth',
+		{ email: username, password: password },
+		{ headers: { 'Content-Type': 'application/json' } },
+	);
+	const setCookieHeaders = response.headers['set-cookie'];
+	if (setCookieHeaders) {
+		for (const cookieStr of setCookieHeaders) {
+			const [cookiePair] = cookieStr.split(';');
+			const [key, value] = cookiePair.split('=');
+			if (key.trim() === 'authtoken_members') {
+				const cookie = value.trim();
+				return cookie;
+			}
+		}
+	}
+}
+
+async function readTags() {
+	try {
+		const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID'] });
+		const tagStrings = tagList.map(tag => `[${tag.get('discord_id')}, ${tag.get('iRacing_ID')}]`);
+		return tagStrings;
+	}
+	catch (error) {
+		console.error('Error reading tags:', error);
+		return [];
+	}
 }
 
 readTags().then(async tagStrings => {
-    // Fetch the guild by ID (replace 'YOUR_GUILD_ID' with your actual guild/server ID)
-    const guild = await client.guilds.fetch(guildId);
-    await guild.members.fetch(); // Ensure all members are cached
+	// Fetch the guild by ID (replace 'YOUR_GUILD_ID' with your actual guild/server ID)
+	const guild = await client.guilds.fetch(guildId);
+	await guild.members.fetch();
+	const cookie = await auth(iracingUser, hashInBase64);
+	console.log('authtoken_members:', cookie);
 
-    tagStrings.forEach(async element => {
-        const [discordId, iracingId] = element.slice(1, -1).split(', ');
-        const member = guild.members.cache.get(discordId);
-        if (member) {
-            console.log(`Found member: ${member.user.tag} with iRacing ID: ${iracingId}`);
-            // Do something with the member and iracingId
-        } else {
-            console.log(`No member found for Discord ID: ${discordId}, deleting tag...`);
-            await Tags.destroy({ where: { discord_id: discordId } });
-        }
-    });
-    process.exit(0);  
+	for (const element of tagStrings) {
+		const [discordId, iracingId] = element.slice(1, -1).split(', ');
+		let member;
+		try {
+			member = await guild.members.fetch(discordId);
+		}
+		catch (err) {
+			member = null;
+		}
+		if (member) {
+			console.log(`Found member: ${member.user.tag} with iRacing ID: ${iracingId}`);
+
+		}
+		else {
+			console.log(`Member with Discord ID ${discordId} not found in the guild.`);
+			const existingTag = await Tags.findOne({ where: { discord_id: discordId } });
+			if (existingTag) {
+				await existingTag.destroy();
+				console.log(`Deleted tag for Discord ID: ${discordId}`);
+			}
+		}
+	}
+	process.exit(0);
 });
 
-client.login(token);
+client.login(discord_token);

@@ -1,12 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { sequelize, Tags } = require('../../database'); // Adjust path if needed
+const { Tags } = require('../../database');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('unlink')
-        .setDescription('Unlink your Discord account from your iRacing ID.'),
-    async execute(interaction) {
-        const discordId = interaction.user.id;
+	data: new SlashCommandBuilder()
+		.setName('unlink')
+		.setDescription('Unlink your Discord account from your iRacing ID.'),
+	async execute(interaction) {
+		const discordId = interaction.user.id;
 
 		try {
 			// Check if the user already has a linked iRacing ID
@@ -15,13 +15,15 @@ module.exports = {
 			if (existingTag) {
 				// Update the existing record
 				await existingTag.destroy();
-				await interaction.reply(`Your iRacing ID has been unlinked.`);
-			} else {
-				await interaction.reply(`Your Discord account is not linked with any iRacing ID.`);
+				await interaction.reply('Your iRacing ID has been unlinked.');
 			}
-		} catch (error) {
+			else {
+				await interaction.reply('Your Discord account is not linked with any iRacing ID.');
+			}
+		}
+		catch (error) {
 			console.error('Error unlinking iRacing ID:', error);
 			await interaction.reply({ content: 'There was an error unlinking your iRacing ID. Please try again later.', ephemeral: true });
 		}
-    }
+	},
 };
