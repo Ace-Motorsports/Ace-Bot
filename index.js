@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { sequelize, Tags } = require('./database'); // Ensure this is the correct path to your database file
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { token, channelId, categoryId } = require('./config/config.json');
 
@@ -26,6 +27,13 @@ for (const folder of commandFolders) {
 }
 
 client.once(Events.ClientReady, readyClient => {
+	sequelize.sync()
+		.then(() => {
+			console.log('Database synchronized successfully.');
+		})
+		.catch(err => {
+			console.error('Failed to synchronize database:', err);
+		});
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
