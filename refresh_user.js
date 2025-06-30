@@ -98,7 +98,7 @@ async function readTags() {
 readTags().then(async tagStrings => {
 	// Fetch the guild by ID (replace 'YOUR_GUILD_ID' with your actual guild/server ID)
 	const guild = await client.guilds.fetch(guildId);
-	await guild.members.fetch();
+	// const members = await guild.members.fetch();
 
 	for (const element of tagStrings) {
 		const [discordId, iracingId] = element.slice(1, -1).split(', ');
@@ -118,7 +118,52 @@ readTags().then(async tagStrings => {
 						include_licenses: true,
 					},
 				});
-			console.log(response);
+			result = response.data.link;
+			const userresult = await axios.get(result);
+			const sr = userresult.data.members[0].licenses[1].safety_rating;
+			let ir = userresult.data.members[0].licenses[1].irating;
+			if (ir > 999) {
+				ir = (ir / 1000).toFixed(1);
+				ir = ir + 'k';
+			}
+			const srclass = userresult.data.members[0].licenses[1].group_id;
+			const name = userresult.data.members[0].display_name;
+			const names = name.split(' ');
+			const first_name = names[0];
+			let last_name = names[names.length - 1];
+			last_name = Array.from(last_name)[0].toUpperCase();
+			const nick = first_name + ' ' + last_name + '. SR: ' + sr + ' IR: ' + ir;
+			let roleName;
+			switch (srclass) {
+			case 1:
+				roleName = 'Rookie';
+				break;
+			case 2:
+				roleName = 'Class-D';
+				break;
+			case 3:
+				roleName = 'Class-C';
+				break;
+			case 4:
+				roleName = 'Class-B';
+				break;
+			case 5:
+				roleName = 'Class-A';
+				break;
+			default:
+				roleName = null;
+			}
+
+			if (roleName) {
+				const role = guild.roles.cache.find(r => r.name === roleName);
+				if (role && !member.roles.cache.has(role.id)) {
+					await member.roles.remove(member.roles.cache.filter(r => r.name.startsWith('Class') || r.name === 'Rookie'));
+					await member.roles.add(role);
+					console.log(`Assigned role ${roleName} to ${member.user.tag}`);
+				}
+			}
+			await member.setNickname(nick);
+			console.log(`Set nickname for ${member.user.tag} to "${nick}"`);
 		}
 		else {
 			console.log(`Member with Discord ID ${discordId} not found in the guild.`);
