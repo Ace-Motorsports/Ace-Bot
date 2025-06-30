@@ -1,11 +1,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { sequelize, Tags } = require('./database'); // Ensure this is the correct path to your database file
+const { sequelize } = require('./database');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
-const { token, channelId, categoryId } = require('./config/config.json');
+const { discord_token, channelId, categoryId } = require('./config/config.json');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
-const TempChannels = require("@gamers-geek/discord-temp-channels");
+const TempChannels = require('@gamers-geek/discord-temp-channels');
 const tempChannels = new TempChannels(client);
 
 client.commands = new Collection();
@@ -20,7 +20,8 @@ for (const folder of commandFolders) {
 		const command = require(filePath);
 		if ('data' in command && 'execute' in command) {
 			client.commands.set(command.data.name, command);
-		} else {
+		}
+		else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 		}
 	}
@@ -48,20 +49,22 @@ client.on(Events.InteractionCreate, async interaction => {
 
 	try {
 		await command.execute(interaction);
-	} catch (error) {
+	}
+	catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
 			await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
-		} else {
+		}
+		else {
 			await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
 		}
 	}
 });
 
 tempChannels.registerChannel(channelId, {
-    childCategory: categoryId,
-    childAutoDeleteIfEmpty: true,
-    childFormat: (member, count) => `Race room #${count}`
+	childCategory: categoryId,
+	childAutoDeleteIfEmpty: true,
+	childFormat: (member, count) => `Race room #${count}`,
 });
 
-client.login(token);
+client.login(discord_token);
