@@ -8,24 +8,80 @@ const CryptoJS = require('crypto-js');
 const hash = CryptoJS.SHA256(iracingPassword + iracingUser.toLowerCase());
 const hashInBase64 = CryptoJS.enc.Base64.stringify(hash);
 
-async function auth(username, password) {
-	const response = await axios.post(
-		'https://members-ng.iracing.com/auth',
-		{ email: username, password: password },
-		{ headers: { 'Content-Type': 'application/json' } },
-	);
-	const setCookieHeaders = response.headers['set-cookie'];
-	if (setCookieHeaders) {
-		for (const cookieStr of setCookieHeaders) {
-			const [cookiePair] = cookieStr.split(';');
-			const [key, value] = cookiePair.split('=');
-			if (key.trim() === 'authtoken_members') {
-				const cookie = value.trim();
-				return cookie;
-			}
+const BASE_URL = 'https://members-ng.iracing.com/auth';
+const axiosInstance = axios.create({ baseURL: BASE_URL });
+
+const createSession = async (user, pass) => {
+	console.log('create session');
+	const authParams = {
+		email: user,
+		password: pass,
+	};
+	const resp = await axios.post(BASE_URL, authParams);
+	const cookie = resp.headers['set-cookie'];
+	axiosInstance.defaults.headers.Cookie = cookie;
+	return cookie;
+};
+
+let isGetActiveSessionRequest = false;
+let requestQueue = [];
+
+const callRequestsFromQueue = cookie => {
+	requestQueue.forEach(sub => sub(cookie));
+};
+const addRequestToQueue = sub => {
+	requestQueue.push(sub);
+};
+const clearQueue = () => {
+	requestQueue = [];
+};
+
+axiosInstance.interceptors.response.use(null, (error) => {
+	console.error(error.message);
+
+	const { response = {}, config: sourceConfig } = error;
+
+	// checking if request failed cause Unauthorized
+	if (response.status === 401) {
+		// if this request is first we set isGetActiveSessionRequest flag to true and run createSession
+		if (!isGetActiveSessionRequest) {
+			isGetActiveSessionRequest = true;
+			createSession(iracingUser, hashInBase64)
+				.then((cookie) => {
+					// when createSession resolve with cookie value we run all request from queue with new cookie
+					isGetActiveSessionRequest = false;
+					callRequestsFromQueue(cookie);
+					clearQueue();
+				})
+				.catch((e) => {
+					isGetActiveSessionRequest = false;
+					console.error('Create session error %s', e.message);
+					clearQueue();
+				});
 		}
+
+		// and while isGetActiveSessionRequest equal true we create and return new promise
+		const retryRequest = new Promise((resolve) => {
+			// we push new function to queue
+			addRequestToQueue((cookie) => {
+				// function takes one param 'cookie'
+				console.log(
+					'Retry with new session context %s request to %s',
+					sourceConfig.method,
+					sourceConfig.url,
+				);
+				sourceConfig.headers.Cookie = cookie;
+				resolve(axios(sourceConfig));
+			});
+		});
+
+		return retryRequest;
 	}
-}
+	else {
+		// if error is not related with Unauthorized we just reject promise
+		return Promise.reject(error);
+	}
+});
 
 async function readTags() {
 	try {
@@ -43,8 +99,6 @@ readTags().then(async tagStrings => {
 	// Fetch the guild by ID (replace 'YOUR_GUILD_ID' with your actual guild/server ID)
 	const guild = await client.guilds.fetch(guildId);
 	await guild.members.fetch();
-	const cookie = await auth(iracingUser, hashInBase64);
-	console.log('authtoken_members:', cookie);
 
 	for (const element of tagStrings) {
 		const [discordId, iracingId] = element.slice(1, -1).split(', ');
@@ -57,7 +111,14 @@ readTags().then(async tagStrings => {
 		}
 		if (member) {
 			console.log(`Found member: ${member.user.tag} with iRacing ID: ${iracingId}`);
-
+			const response = await axiosInstance.get('https://members-ng.iracing.com/data/member/get',
+				{
+					params: {
+						cust_ids: iracingId,
+						include_licenses: true,
+					},
+				});
+			console.log(response);
 		}
 		else {
 			console.log(`Member with Discord ID ${discordId} not found in the guild.`);
