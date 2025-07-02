@@ -2,7 +2,7 @@ const { Tags } = require('./database');
 const { Client, GatewayIntentBits } = require('discord.js');
 const { discord_token, guildId, iracingUser, iracingPassword } = require('./config/config.json');
 const axios = require('axios');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers], shards: 'auto' });
 const CryptoJS = require('crypto-js');
 
 const hash = CryptoJS.SHA256(iracingPassword + iracingUser.toLowerCase());
@@ -174,6 +174,7 @@ readTags().then(async tagStrings => {
 			}
 		}
 	}
+	client.destroy();
 	process.exit(0);
 });
 

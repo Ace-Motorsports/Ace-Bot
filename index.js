@@ -4,7 +4,7 @@ const { sequelize } = require('./database');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { discord_token, channelId, categoryId } = require('./config/config.json');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates], shards: 'auto' });
 const TempChannels = require('@gamers-geek/discord-temp-channels');
 const tempChannels = new TempChannels(client);
 
