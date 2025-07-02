@@ -175,7 +175,9 @@ readTags().then(async tagStrings => {
 		}
 	}
 	client.destroy();
-	process.exit(0);
+	client.once('shardDisconnect', () => {
+		process.exit(0);
+	});
 });
 
 client.login(discord_token);
