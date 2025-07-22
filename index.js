@@ -3,6 +3,7 @@ const path = require('node:path');
 const { sequelize } = require('./database');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { discord_token, channelId, categoryId } = require('./config/config.json');
+const refreshUsers = require('./refresh_user');
 
 const clientOptions = {
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -40,6 +41,11 @@ client.once(Events.ClientReady, readyClient => {
 			console.error('Failed to synchronize database:', err);
 		});
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+
+	// Call refreshUsers immediately, then every 15 minutes
+	const runRefresh = () => refreshUsers(client).catch(console.error);
+	runRefresh();
+	setInterval(runRefresh, 15 * 60 * 1000);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
