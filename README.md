@@ -67,11 +67,11 @@ Before running the bot, you must create the following roles in your Discord serv
 4. Repeat for each role: `Class-D`, `Class-C`, `Class-B`, `Class-A`.
 5. Optionally, set colors and permissions as needed.
 6. **Important:** Make sure the bot's role is above these roles in the role hierarchy so it can assign them.  
-   The bot can only change the nicknames and roles of users whose roles are lower than the bot's own role in the hierarchy.
+   The bot can only change the nicknames and roles of users whose roles are lower than the bot's own role in the hierarchy so it is recommended to be a role higher than all human users.
 
 ### 4. Bot Permissions in Discord Developer Portal
 
-When setting up your bot in the [Discord Developer Portal](https://discord.com/developers/applications), set the following **scopes** and **permissions** as shown in the screenshot:
+When setting up your bot in the [Discord Developer Portal](https://discord.com/developers/applications), set the following **scopes** and **permissions**:
 
 **Scopes:**
 - `applications.commands`
