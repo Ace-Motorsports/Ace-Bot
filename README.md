@@ -153,6 +153,19 @@ docker run -d \
   docker stop ace-bot
   ```
 
+### 7. Initialize Slash Commands
+
+After starting the bot for the first time, you need to deploy the slash commands to your Discord server.
+
+Run the following command in your project directory:
+
+```bash
+node deploy-commands.js
+```
+
+This will register all available slash commands with Discord using your bot's credentials.  
+If you add or update commands in the `commands` folder, re-run this script.
+
 ---
 
 ## Notes
