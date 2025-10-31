@@ -83,12 +83,107 @@ axiosInstance.interceptors.response.use(null, async (error) => {
 });
 
 async function refreshUsers(client) {
-  // ... (rest of the refreshUsers function is the same)
+    try {
+        console.log('[RefreshUsers] Starting user refresh process...');
+        if (!accessToken) {
+            await getAccessToken();
+        }
+
+        const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID'] });
+        console.log(`[RefreshUsers] Found ${tagList.length} users to refresh.`);
+        const guild = await client.guilds.fetch(guildId);
+
+        for (const tag of tagList) {
+            const discordId = tag.get('discord_id');
+            const iracingId = tag.get('iRacing_ID');
+            let member;
+
+            try {
+                member = await guild.members.fetch(discordId);
+            } catch (err) {
+                member = null;
+            }
+
+            if (member) {
+                console.log(`[RefreshUsers] Processing member: ${member.user.tag} (iRacing ID: ${iracingId})`);
+                let response = await axiosInstance.get('/data/member/get', {
+                    params: { cust_ids: iracingId, include_licenses: true },
+                });
+
+                if (response.data.link) {
+                    console.log(`[RefreshUsers] Following iRacing API link for ${iracingId}`);
+                    response = await axios.get(response.data.link);
+                }
+
+                if (!response.data || !response.data.members || response.data.members.length === 0) {
+                    console.log(`[RefreshUsers] No member data found for iRacing ID: ${iracingId}`);
+                    continue;
+                }
+
+                const memberData = response.data.members[0];
+                const roadLicense = memberData.licenses.find(l => l.category_id === 5);
+
+                if (!roadLicense) {
+                    console.log(`[RefreshUsers] No sports car license found for iRacing ID: ${iracingId}`);
+                    continue;
+                }
+
+                const sr = roadLicense.safety_rating;
+                let ir = roadLicense.irating;
+                if (ir > 999) {
+                    ir = (ir / 1000).toFixed(1) + 'k';
+                }
+                const srclass = roadLicense.group_id;
+                const name = memberData.display_name;
+                const names = name.split(' ');
+                const first_name = names[0];
+                let last_name = names[names.length - 1];
+                last_name = Array.from(last_name)[0].toUpperCase();
+                const nick = `${first_name} ${last_name}. SR: ${sr} IR: ${ir}`;
+
+                let roleName;
+                switch (srclass) {
+                    case 1: roleName = 'Rookie'; break;
+                    case 2: roleName = 'Class-D'; break;
+                    case 3: roleName = 'Class-C'; break;
+                    case 4: roleName = 'Class-B'; break;
+                    case 5: roleName = 'Class-A'; break;
+                    default: roleName = null;
+                }
+                
+                if (member.nickname !== nick) {
+                    await member.setNickname(nick);
+                    console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to "${nick}"`);
+                }
+
+                if (roleName) {
+                    const role = guild.roles.cache.find(r => r.name === roleName);
+                    if (role && !member.roles.cache.has(role.id)) {
+                        const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
+                        if (rolesToRemove.size > 0) {
+                            await member.roles.remove(rolesToRemove);
+                            console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
+                        }
+                        await member.roles.add(role);
+                        console.log(`[RefreshUsers] Assigned role ${roleName} to ${member.user.tag}`);
+                    }
+                }
+            } else {
+                console.log(`[RefreshUsers] Member with Discord ID ${discordId} not found. Deleting tag.`);
+                await Tags.destroy({ where: { discord_id: discordId } });
+            }
+        }
+        console.log('[RefreshUsers] User refresh process finished.');
+    } catch (error) {
+        console.error('[RefreshUsers] CRITICAL ERROR during refresh process:', error.response ? error.response.data : error.message);
+        if (error.stack) {
+            console.error(error.stack);
+        }
+        throw error;
+    }
 }
 
-// --- IPC Trigger Logic ---
 if (require.main === module) {
-    // This block runs if the script is executed directly (e.g., `node refresh_user.js`)
     const IPC_PORT = ipc_port || 8081;
     console.log(`[IPC Client] Attempting to trigger manual refresh via IPC on port ${IPC_PORT}...`);
 
@@ -108,10 +203,9 @@ if (require.main === module) {
 
     ipcClient.on('error', (err) => {
         console.error('[IPC Client] Could not connect to IPC server. Is the bot running?', err.message);
-        process.exit(1); // Exit with an error code for cron
+        process.exit(1);
     });
 
 } else {
-    // This block runs if the script is imported by another file (e.g., `require('./refresh_user')`)
     module.exports = refreshUsers;
 }
