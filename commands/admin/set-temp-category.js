@@ -18,11 +18,11 @@ module.exports = {
 
 		try {
 			await GuildSettings.upsert({ guild_id: guildId, temp_category_id: category.id });
-			await interaction.reply({ content: `The temporary channel category has been set to **${category.name}**.`, ephemeral: true });
+			await interaction.reply({ content: `The temporary channel category has been set to **${category.name}**.`, flags: 64 });
 		}
 		catch (error) {
 			console.error('Error setting temp category:', error);
-			await interaction.reply({ content: 'There was an error while setting the temporary channel category. Please try again later.', ephemeral: true });
+			await interaction.reply({ content: 'There was an error while setting the temporary channel category. Please try again later.', flags: 64 });
 		}
 	},
 };

@@ -19,15 +19,15 @@ module.exports = {
 
 			if (tag) {
 				await tag.update({ display_license: display });
-				await interaction.reply({ content: `Your nickname will now ${display ? 'show' : 'hide'} your iRacing license information.`, ephemeral: true });
+				await interaction.reply({ content: `Your nickname will now ${display ? 'show' : 'hide'} your iRacing license information.`, flags: 64 });
 			}
 			else {
-				await interaction.reply({ content: 'You do not have an iRacing ID linked. Please use the /link command first.', ephemeral: true });
+				await interaction.reply({ content: 'You do not have an iRacing ID linked. Please use the /link command first.', flags: 64 });
 			}
 		}
 		catch (error) {
 			console.error('Error toggling nickname display:', error);
-			await interaction.reply({ content: 'There was an error updating your preference. Please try again later.', ephemeral: true });
+			await interaction.reply({ content: 'There was an error updating your preference. Please try again later.', flags: 64 });
 		}
 	},
 };

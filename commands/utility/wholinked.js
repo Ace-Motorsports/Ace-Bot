@@ -12,7 +12,7 @@ module.exports = {
 			const tagList = await Tags.findAll({ where: { guild_id: guildId } });
 
 			if (tagList.length === 0) {
-				return interaction.reply({ content: 'No users in this server have linked their iRacing ID.', ephemeral: true });
+				return interaction.reply({ content: 'No users in this server have linked their iRacing ID.', flags: 64 });
 			}
 
 			const promises = tagList.map(async (tag) => {
@@ -26,11 +26,11 @@ module.exports = {
 			});
 
 			const memberList = await Promise.all(promises);
-			await interaction.reply({ content: `**Users with linked iRacing IDs:**\n${memberList.join('\n')}`, ephemeral: true });
+			await interaction.reply({ content: `**Users with linked iRacing IDs:**\n${memberList.join('\n')}`, flags: 64 });
 		}
 		catch (error) {
 			console.error('Error listing linked users:', error);
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.reply({ content: 'There was an error while executing this command!', flags: 64 });
 		}
 	},
 };
