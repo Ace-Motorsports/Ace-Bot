@@ -1,9 +1,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const net = require('node:net');
 const { sequelize } = require('./database');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
-const { discord_token, channelId, categoryId } = require('./config/config.json');
+const { discord_token, channelId, categoryId, ipc_port } = require('./config/config.json');
 const refreshUsers = require('./refresh_user');
+
+const IPC_PORT = ipc_port || 8081;
 
 const clientOptions = {
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -44,10 +47,47 @@ client.once(Events.ClientReady, readyClient => {
 		});
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 
-	// Call refreshUsers immediately, then every 15 minutes
-	const runRefresh = () => refreshUsers(client).catch(console.error);
-	runRefresh();
-	setInterval(runRefresh, 15 * 60 * 1000);
+	// Initial refresh on startup
+	refreshUsers(client).catch(console.error);
+
+    // --- Start IPC Server ---
+    const ipcServer = net.createServer(socket => {
+        console.log('IPC client connected.');
+        socket.on('data', data => {
+            const message = data.toString().trim();
+            if (message === 'REFRESH_USERS') {
+                console.log('Manual user refresh triggered via IPC.');
+                refreshUsers(client)
+                    .then(() => {
+                        console.log('IPC-triggered refresh completed successfully.');
+                        socket.write('SUCCESS: Refresh complete.');
+                    })
+                    .catch(err => {
+                        console.error('IPC-triggered refresh failed:', err);
+                        socket.write('ERROR: Refresh failed.');
+                    })
+                    .finally(() => {
+                        socket.end();
+                    });
+            } else {
+				console.log('Unknown IPC message.');
+				socket.write('ERROR: Unknown command.');
+				socket.end();
+			}
+        });
+        socket.on('end', () => {
+            console.log('IPC client disconnected.');
+        });
+		socket.on('error', (err) => {
+			console.error('IPC socket error:', err);
+		})
+    }).listen(IPC_PORT, '127.0.0.1', () => {
+        console.log(`IPC server listening on localhost port ${IPC_PORT}`);
+    });
+
+	ipcServer.on('error', (err) => {
+		console.error('IPC server error:', err);
+	});
 });
 
 client.on(Events.InteractionCreate, async interaction => {
