@@ -2,11 +2,11 @@ module.exports = (sequelize, DataTypes) => {
     return sequelize.define('tags', {
         discord_id: {
             type: DataTypes.STRING,
-            primaryKey: true,
+            unique: 'compositeIndex'
         },
         guild_id: {
             type: DataTypes.STRING,
-            primaryKey: true,
+            unique: 'compositeIndex'
         },
         iRacing_ID: {
             type: DataTypes.STRING,
@@ -17,6 +17,6 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: true,
         },
     }, {
-        timestamps: false,
+        timestamps: true,
     });
 };
