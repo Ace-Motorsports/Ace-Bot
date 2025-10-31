@@ -1,28 +1,13 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('userdb', 'username', 'password', {
-	host: './db.sqlite',
-	dialect: 'sqlite',
+const sequelize = new Sequelize('database', 'user', 'password', {
+    host: 'localhost',
+    dialect: 'sqlite',
+    logging: false,
+    storage: 'db.sqlite',
 });
 
-const Tags = sequelize.define('tags', {
-	discord_id: {
-		type: Sequelize.TEXT,
-		primaryKey: true,
-	},
-	iRacing_ID: {
-		type: Sequelize.TEXT,
-		allowNull: false,
-	},
-  display_license: {
-    type: Sequelize.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-	timestamps: false,
-});
+const Tags = require('./models/tags.js')(sequelize, Sequelize.DataTypes);
+const GuildSettings = require('./models/guild_settings.js')(sequelize, Sequelize.DataTypes);
 
-module.exports = {
-	sequelize,
-	Tags,
-};
+module.exports = { sequelize, Tags, GuildSettings };

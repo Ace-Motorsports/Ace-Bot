@@ -1,5 +1,5 @@
-const { Tags } = require('./database');
-const { guildId, iracingUser, iracingPassword, iracingClientId, iracingClientSecret, ipc_port } = require('./config/config.json');
+const { Tags, GuildSettings } = require('./database');
+const { iracingUser, iracingPassword, iracingClientId, iracingClientSecret, ipc_port } = require('./config/config.json');
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
 const net = require('node:net');
@@ -89,70 +89,76 @@ async function refreshUsers(client) {
             await getAccessToken();
         }
 
-        const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID', 'display_license'] });
-        console.log(`[RefreshUsers] Found ${tagList.length} users to refresh.`);
-        const guild = await client.guilds.fetch(guildId);
+        const guilds = await client.guilds.fetch();
+        console.log(`[RefreshUsers] Refreshing users in ${guilds.size} guilds.`);
 
-        for (const tag of tagList) {
-            const discordId = tag.get('discord_id');
-            const iracingId = tag.get('iRacing_ID');
-            const displayLicense = tag.get('display_license');
-            let member;
+        for (const [guildId, oauth2guild] of guilds) {
+            const guild = await oauth2guild.fetch();
+            console.log(`\n[RefreshUsers] Processing guild: ${guild.name} (${guild.id})`);
+            const tagList = await Tags.findAll({ where: { guild_id: guild.id } });
+            console.log(`[RefreshUsers] Found ${tagList.length} users to refresh in this guild.`);
 
-            try {
-                member = await guild.members.fetch(discordId);
-            } catch (err) {
-                member = null;
-            }
+            for (const tag of tagList) {
+                const discordId = tag.get('discord_id');
+                const iracingId = tag.get('iRacing_ID');
+                const displayLicense = tag.get('display_license');
+                let member;
 
-            if (member) {
-                console.log(`\n[RefreshUsers] Processing member: ${member.user.tag} (iRacing ID: ${iracingId})`);
-                let response = await axiosInstance.get('/data/member/get', {
-                    params: { cust_ids: iracingId, include_licenses: true },
-                });
-
-                if (response.data.link) {
-                    console.log(`[RefreshUsers] Following iRacing API link for ${iracingId}`);
-                    response = await axios.get(response.data.link);
+                try {
+                    member = await guild.members.fetch(discordId);
+                } catch (err) {
+                    member = null;
                 }
 
-                if (!response.data || !response.data.members || response.data.members.length === 0) {
-                    console.log(`[RefreshUsers] No member data found for iRacing ID: ${iracingId}`);
-                    continue;
-                }
+                if (member) {
+                    console.log(`\n[RefreshUsers] Processing member: ${member.user.tag} (iRacing ID: ${iracingId})`);
+                    let response = await axiosInstance.get('/data/member/get', {
+                        params: { cust_ids: iracingId, include_licenses: true },
+                    });
 
-                const memberData = response.data.members[0];
-                const name = memberData.display_name;
-                let nick = name;
+                    if (response.data.link) {
+                        console.log(`[RefreshUsers] Following iRacing API link for ${iracingId}`);
+                        response = await axios.get(response.data.link);
+                    }
 
-                if (displayLicense) {
-                  const roadLicense = memberData.licenses.find(l => l.category_id === 5);
+                    if (!response.data || !response.data.members || response.data.members.length === 0) {
+                        console.log(`[RefreshUsers] No member data found for iRacing ID: ${iracingId}`);
+                        continue;
+                    }
 
-                  if (roadLicense) {
-                      const sr = roadLicense.safety_rating;
-                      let ir = roadLicense.irating;
-                      if (ir > 999) {
-                          ir = (ir / 1000).toFixed(1) + 'k';
+                    const memberData = response.data.members[0];
+                    const name = memberData.display_name;
+                    let nick = name;
+
+                    if (displayLicense) {
+                      const roadLicense = memberData.licenses.find(l => l.category_id === 5);
+
+                      if (roadLicense) {
+                          const sr = roadLicense.safety_rating;
+                          let ir = roadLicense.irating;
+                          if (ir > 999) {
+                              ir = (ir / 1000).toFixed(1) + 'k';
+                          }
+                          const srclass = roadLicense.group_id;
+                          const licenseMap = { 1: 'R', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
+                          const licenseClass = licenseMap[srclass] || '';
+                          const names = name.split(' ');
+                          const first_name = names[0];
+                          let last_name = names[names.length - 1];
+                          last_name = Array.from(last_name)[0].toUpperCase();
+                          nick = `${first_name} ${last_name}. | ${licenseClass} ${sr.toFixed(2)} SR ${ir} IR`;
                       }
-                      const srclass = roadLicense.group_id;
-                      const licenseMap = { 1: 'R', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
-                      const licenseClass = licenseMap[srclass] || '';
-                      const names = name.split(' ');
-                      const first_name = names[0];
-                      let last_name = names[names.length - 1];
-                      last_name = Array.from(last_name)[0].toUpperCase();
-                      nick = `${first_name} ${last_name}. | ${licenseClass} ${sr.toFixed(2)} SR ${ir} IR`;
-                  }
-                }
+                    }
 
-                if (member.nickname !== nick) {
-                    await member.setNickname(nick);
-                    console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to "${nick}"`);
-                }
+                    if (member.nickname !== nick) {
+                        await member.setNickname(nick);
+                        console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to \"${nick}\"`);
+                    }
 
-            } else {
-                console.log(`[RefreshUsers] Member with Discord ID ${discordId} not found. Deleting tag.`);
-                await Tags.destroy({ where: { discord_id: discordId } });
+                } else {
+                    console.log(`[RefreshUsers] Member with Discord ID ${discordId} not found in guild ${guild.name}. Deleting tag.`);
+                    await Tags.destroy({ where: { discord_id: discordId, guild_id: guild.id } });
+                }
             }
         }
         console.log('\n[RefreshUsers] User refresh process finished.');

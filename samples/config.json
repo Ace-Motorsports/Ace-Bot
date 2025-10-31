@@ -1,11 +1,7 @@
 {
 	"discord_token": "your-discord-auth-token",
-	"clientId": "your-discord-clientId",
-	"channelId": "temporary-channelId",
-	"categoryId": "categoryid-for-new-temporary-channels",	
 	"iracingUser": "your-iracing-username",
 	"iracingPassword": "your-iracing-password",
 	"iracingClientId": "your-iracing-client-id",
-	"iracingClientSecret": "your-iracing-client-secret",
-	"guildId": "your-discord-guild-id"
+	"iracingClientSecret": "your-iracing-client-secret"
 }
