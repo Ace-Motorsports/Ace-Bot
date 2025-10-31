@@ -16,6 +16,17 @@ A Discord.js bot for iRacing Ace Motorsports.
     *   `/set-temp-channel <channel>`: Sets the voice channel that users can join to create a temporary race room.
     *   `/set-temp-category <category>`: Sets the category where the new temporary race rooms will be created.
 
+## Nickname Format
+
+When you link your iRacing account, your server nickname will be automatically updated to the following format:
+
+`First L. | C 4.20 SR 1.8k IR`
+
+*   **First L.:** Your first name and last initial.
+*   **C:** Your current road license class (R, D, C, B, A).
+*   **4.20 SR:** Your current safety rating, to two decimal places.
+*   **1.8k IR:** Your current iRating. If your iRating is over 999, it will be displayed in thousands (e.g., 1.8k, 2.5k, 10.2k).
+
 ## User Commands
 
 *   `/link <iracing_id>`: Links your Discord account to your iRacing account. Your iRacing ID is the number found in the top right of your iRacing profile.
