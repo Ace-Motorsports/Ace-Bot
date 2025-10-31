@@ -150,12 +150,6 @@ async function refreshUsers(client) {
                     console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to "${nick}"`);
                 }
 
-                const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
-                if (rolesToRemove.size > 0) {
-                    await member.roles.remove(rolesToRemove);
-                    console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
-                }
-
             } else {
                 console.log(`[RefreshUsers] Member with Discord ID ${discordId} not found. Deleting tag.`);
                 await Tags.destroy({ where: { discord_id: discordId } });
