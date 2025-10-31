@@ -89,13 +89,14 @@ async function refreshUsers(client) {
             await getAccessToken();
         }
 
-        const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID'] });
+        const tagList = await Tags.findAll({ attributes: ['discord_id', 'iRacing_ID', 'display_license'] });
         console.log(`[RefreshUsers] Found ${tagList.length} users to refresh.`);
         const guild = await client.guilds.fetch(guildId);
 
         for (const tag of tagList) {
             const discordId = tag.get('discord_id');
             const iracingId = tag.get('iRacing_ID');
+            const displayLicense = tag.get('display_license');
             let member;
 
             try {
@@ -121,64 +122,38 @@ async function refreshUsers(client) {
                 }
 
                 const memberData = response.data.members[0];
-                const roadLicense = memberData.licenses.find(l => l.category_id === 5);
-
-                if (!roadLicense) {
-                    console.log(`[RefreshUsers] No sports car license found for iRacing ID: ${iracingId}`);
-                    continue;
-                }
-
-                const sr = roadLicense.safety_rating;
-                let ir = roadLicense.irating;
-                if (ir > 999) {
-                    ir = (ir / 1000).toFixed(1) + 'k';
-                }
-                const srclass = roadLicense.group_id;
                 const name = memberData.display_name;
-                const names = name.split(' ');
-                const first_name = names[0];
-                let last_name = names[names.length - 1];
-                last_name = Array.from(last_name)[0].toUpperCase();
-                const nick = `${first_name} ${last_name}. SR: ${sr} IR: ${ir}`;
+                let nick = name;
 
-                let roleName;
-                switch (srclass) {
-                    case 1: roleName = 'Rookie'; break;
-                    case 2: roleName = 'Class-D'; break;
-                    case 3: roleName = 'Class-C'; break;
-                    case 4: roleName = 'Class-B'; break;
-                    case 5: roleName = 'Class-A'; break;
-                    default: roleName = null;
+                if (displayLicense) {
+                  const roadLicense = memberData.licenses.find(l => l.category_id === 5);
+
+                  if (roadLicense) {
+                      const sr = roadLicense.safety_rating;
+                      let ir = roadLicense.irating;
+                      if (ir > 999) {
+                          ir = (ir / 1000).toFixed(1) + 'k';
+                      }
+                      const srclass = roadLicense.group_id;
+                      const licenseMap = { 1: 'R', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
+                      const licenseClass = licenseMap[srclass] || '';
+                      const names = name.split(' ');
+                      const first_name = names[0];
+                      let last_name = names[names.length - 1];
+                      last_name = Array.from(last_name)[0].toUpperCase();
+                      nick = `${first_name} ${last_name}. | ${licenseClass} ${sr.toFixed(2)} SR ${ir} IR`;
+                  }
                 }
 
-                // --- Start Temporary Verbose Logging ---
-                console.log(`[RefreshUsers] DATA COMPARISON for ${member.user.tag}:`);
-                console.log(`  - Current Nick:   ${member.nickname}`);
-                console.log(`  - Generated Nick: ${nick}`);
-                console.log(`  - Needs Nick Update? ${(member.nickname !== nick)}`);
-
-                const expectedRole = roleName ? guild.roles.cache.find(r => r.name === roleName) : null;
-                const hasCorrectRole = expectedRole && member.roles.cache.has(expectedRole.id);
-                const currentLicenseRole = member.roles.cache.find(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
-
-                console.log(`  - Current Role:     ${currentLicenseRole ? currentLicenseRole.name : 'None'}`)
-                console.log(`  - Expected Role:    ${roleName || 'None'}`);
-                console.log(`  - Needs Role Update? ${!hasCorrectRole && !!expectedRole}`);
-                // --- End Temporary Verbose Logging ---
-                
                 if (member.nickname !== nick) {
                     await member.setNickname(nick);
                     console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to "${nick}"`);
                 }
 
-                if (expectedRole && !hasCorrectRole) {
-                    const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
-                    if (rolesToRemove.size > 0) {
-                        await member.roles.remove(rolesToRemove);
-                        console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
-                    }
-                    await member.roles.add(expectedRole);
-                    console.log(`[RefreshUsers] Assigned role ${expectedRole.name} to ${member.user.tag}`);
+                const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
+                if (rolesToRemove.size > 0) {
+                    await member.roles.remove(rolesToRemove);
+                    console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
                 }
 
             } else {
