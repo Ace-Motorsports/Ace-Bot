@@ -1,6 +1,7 @@
 const { Tags } = require('./database');
 const { guildId, iracingUser, iracingPassword, iracingClientId, iracingClientSecret } = require('./config/config.json');
 const axios = require('axios');
+const CryptoJS = require('crypto-js');
 
 const OAUTH_URL = 'https://oauth.iracing.com/oauth2/token';
 const API_URL = 'https://members-ng.iracing.com';
@@ -13,12 +14,22 @@ const axiosInstance = axios.create({ baseURL: API_URL });
 
 const getAccessToken = async () => {
   console.log('Getting new access token');
+
+  // Mask the password with the username
+  const hashedPassword = CryptoJS.SHA256(iracingPassword + iracingUser.toLowerCase());
+  const base64Password = CryptoJS.enc.Base64.stringify(hashedPassword);
+
+  // Mask the client secret with the client ID
+  const hashedSecret = CryptoJS.SHA256(iracingClientSecret + iracingClientId.toLowerCase());
+  const base64Secret = CryptoJS.enc.Base64.stringify(hashedSecret);
+
   const params = new URLSearchParams();
-  params.append('grant_type', 'password');
+  params.append('grant_type', 'password_limited');
+  params.append('scope', 'iracing.auth');
   params.append('client_id', iracingClientId);
-  params.append('client_secret', iracingClientSecret);
+  params.append('client_secret', base64Secret);
   params.append('username', iracingUser);
-  params.append('password', iracingPassword);
+  params.append('password', base64Password);
 
   const resp = await axios.post(OAUTH_URL, params);
   accessToken = resp.data.access_token;
@@ -93,52 +104,65 @@ async function refreshUsers(client) {
       }
 
       if (member) {
-        console.log(`Found member: ${member.user.tag} with iRacing ID: ${iracingId}`);
-        const response = await axiosInstance.get('/data/member/get', {
+        console.log(`Processing member: ${member.user.tag} with iRacing ID: ${iracingId}`);
+        let response = await axiosInstance.get('/data/member/get', {
           params: {
             cust_ids: iracingId,
             include_licenses: true,
           },
         });
 
-        const memberData = response.data.members[0];
-        const roadLicense = memberData.licenses.find(l => l.cat_id === 2); // Assuming road license is what we want
-
-        if (roadLicense) {
-            const sr = roadLicense.safety_rating;
-            let ir = roadLicense.irating;
-            if (ir > 999) {
-                ir = (ir / 1000).toFixed(1) + 'k';
-            }
-            const srclass = roadLicense.group_id;
-            const name = memberData.display_name;
-            const names = name.split(' ');
-            const first_name = names[0];
-            let last_name = names[names.length - 1];
-            last_name = Array.from(last_name)[0].toUpperCase();
-            const nick = `${first_name} ${last_name}. SR: ${sr} IR: ${ir}`;
-
-            let roleName;
-            switch (srclass) {
-                case 1: roleName = 'Rookie'; break;
-                case 2: roleName = 'Class-D'; break;
-                case 3: roleName = 'Class-C'; break;
-                case 4: roleName = 'Class-B'; break;
-                case 5: roleName = 'Class-A'; break;
-                default: roleName = null;
-            }
-
-            if (roleName) {
-                const role = guild.roles.cache.find(r => r.name === roleName);
-                if (role && !member.roles.cache.has(role.id)) {
-                    await member.roles.remove(member.roles.cache.filter(r => r.name.startsWith('Class') || r.name === 'Rookie'));
-                    await member.roles.add(role);
-                    console.log(`Assigned role ${roleName} to ${member.user.tag}`);
-                }
-            }
-            await member.setNickname(nick);
-            console.log(`Set nickname for ${member.user.tag} to "${nick}"`);
+        if (response.data.link) {
+            console.log(`Following iRacing API link for ${iracingId}`);
+            response = await axios.get(response.data.link);
         }
+
+        if (!response.data || !response.data.members || response.data.members.length === 0) {
+          console.log(`No member data found for iRacing ID: ${iracingId}`);
+          continue;
+        }
+
+        const memberData = response.data.members[0];
+        const roadLicense = memberData.licenses.find(l => l.category_id === 5);
+
+        if (!roadLicense) {
+            console.log(`No sports car license found for iRacing ID: ${iracingId}`);
+            continue;
+        }
+
+        const sr = roadLicense.safety_rating;
+        let ir = roadLicense.irating;
+        if (ir > 999) {
+            ir = (ir / 1000).toFixed(1) + 'k';
+        }
+        const srclass = roadLicense.group_id;
+        const name = memberData.display_name;
+        const names = name.split(' ');
+        const first_name = names[0];
+        let last_name = names[names.length - 1];
+        last_name = Array.from(last_name)[0].toUpperCase();
+        const nick = `${first_name} ${last_name}. SR: ${sr} IR: ${ir}`;
+
+        let roleName;
+        switch (srclass) {
+            case 1: roleName = 'Rookie'; break;
+            case 2: roleName = 'Class-D'; break;
+            case 3: roleName = 'Class-C'; break;
+            case 4: roleName = 'Class-B'; break;
+            case 5: roleName = 'Class-A'; break;
+            default: roleName = null;
+        }
+
+        if (roleName) {
+            const role = guild.roles.cache.find(r => r.name === roleName);
+            if (role && !member.roles.cache.has(role.id)) {
+                await member.roles.remove(member.roles.cache.filter(r => r.name.startsWith('Class') || r.name === 'Rookie'));
+                await member.roles.add(role);
+                console.log(`Assigned role ${roleName} to ${member.user.tag}`);
+            }
+        }
+        await member.setNickname(nick);
+        console.log(`Set nickname for ${member.user.tag} to "${nick}"`);
       } else {
         console.log(`Member with Discord ID ${discordId} not found in the guild.`);
         const existingTag = await Tags.findOne({ where: { discord_id: discordId } });
@@ -150,6 +174,9 @@ async function refreshUsers(client) {
     }
   } catch (error) {
     console.error('Error in refreshUsers:', error.response ? error.response.data : error.message);
+    if (error.stack) {
+        console.error(error.stack);
+    }
   }
 }
 

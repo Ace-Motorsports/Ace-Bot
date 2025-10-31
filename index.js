@@ -16,6 +16,7 @@ const tempChannels = new TempChannels(client);
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 for (const folder of commandFolders) {
 	const commandsPath = path.join(foldersPath, folder);
@@ -24,7 +25,8 @@ for (const folder of commandFolders) {
 		const filePath = path.join(commandsPath, file);
 		const command = require(filePath);
 		if ('data' in command && 'execute' in command) {
-			client.commands.set(command.data.name, command);
+			const commandName = isDevelopment ? 'd' + command.data.name : command.data.name;
+			client.commands.set(commandName, command);
 		}
 		else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
