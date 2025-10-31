@@ -9,24 +9,37 @@ module.exports = {
 			option.setName('iracing_id')
 				.setDescription('Your iRacing ID')
 				.setRequired(true),
+		)
+		.addBooleanOption(option =>
+			option.setName('display_license')
+				.setDescription('Whether to display your iRacing license in your nickname. Defaults to true.')
 		),
 	async execute(interaction) {
 		const iracingId = interaction.options.getString('iracing_id');
+		const displayLicense = interaction.options.getBoolean('display_license');
 		const discordId = interaction.user.id;
 
 		try {
-			// Check if the user already has a linked iRacing ID
 			const existingTag = await Tags.findOne({ where: { discord_id: discordId } });
 
 			if (existingTag) {
-				// Update the existing record
-				await existingTag.update({ iRacing_ID: iracingId });
-				await interaction.reply(`Your iRacing ID has been updated to ${iracingId}.`);
+				const updateData = { iRacing_ID: iracingId };
+				if (displayLicense !== null) {
+					updateData.display_license = displayLicense;
+				}
+				await existingTag.update(updateData);
+
+				let replyMessage = `Your iRacing ID has been updated to ${iracingId}.`;
+				if (displayLicense !== null) {
+					replyMessage += ` Your license display preference has been updated to ${displayLicense}.`;
+				}
+
+				await interaction.reply(replyMessage);
 			}
 			else {
-				// Create a new record
-				await Tags.create({ discord_id: discordId, iRacing_ID: iracingId });
-				await interaction.reply(`Your Discord account has been linked with iRacing ID: ${iracingId}.`);
+				const displayLicenseValue = displayLicense ?? true;
+				await Tags.create({ discord_id: discordId, iRacing_ID: iracingId, display_license: displayLicenseValue });
+				await interaction.reply(`Your Discord account has been linked with iRacing ID: ${iracingId}. Your license display preference is set to ${displayLicenseValue}.`);
 			}
 		}
 		catch (error) {

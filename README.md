@@ -6,8 +6,7 @@ Ace Motorsports iRacing Discord bot
 
 Ace-Bot is designed to integrate your iRacing and Discord experience seamlessly. Here are some of the key features:
 
-*   **iRacing License Roles:** Automatically assign Discord roles to users based on their iRacing license class. This helps you easily identify drivers of different skill levels in your server.
-*   **Dynamic Nicknames:** The bot can update user nicknames to match their iRacing names, ensuring consistency and easy identification.
+*   **Dynamic Nicknames:** The bot automatically updates user nicknames to display their iRacing name, license class, safety rating, and iRating (e.g., `First L. | A 4.99 SR 2.1k IR`). Users can control this feature with the `/togglenick` command.
 *   **Temporary Voice Channels:** Users can create temporary voice channels, which are automatically deleted when empty, keeping your voice channel list clean and organized.
 *   **iRacing Account Linking:** Securely link your iRacing account to your Discord profile to enable the features above.
 
@@ -29,21 +28,10 @@ When you invite the bot, ensure that the following permissions are granted for i
 *   Use Voice Activity
 *   View Channels
 
-## Required Server Setup
-
-For the license-based role-management features to work, you must create the following roles in your Discord server:
-
-*   **Rookie**
-*   **Class-D**
-*   **Class-C**
-*   **Class-B**
-*   **Class-A**
-
-**Important:** The bot's role must be higher than these license roles in your server's role hierarchy for it to be able to assign them to users.
-
 ## Slash Commands
 
 Ace-Bot uses slash commands for all of its features. Here are the available commands:
 
-*   `/link`: Link your iRacing account to your Discord account.
+*   `/link`: Link your iRacing account to your Discord account. You can also set your preference for displaying your license information in your nickname.
+*   `/togglenick`: Show or hide your iRacing license information in your nickname.
 *   `/unlink`: Unlink your iRacing account from your Discord account.

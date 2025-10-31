@@ -14,6 +14,10 @@ const Tags = sequelize.define('tags', {
 		type: Sequelize.TEXT,
 		allowNull: false,
 	},
+  display_license: {
+    type: Sequelize.BOOLEAN,
+    defaultValue: true,
+  },
 }, {
 	timestamps: false,
 });
