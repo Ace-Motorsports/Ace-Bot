@@ -21,6 +21,13 @@ module.exports = {
 		const guildId = interaction.guild.id;
 
 		try {
+			const botMember = await interaction.guild.members.fetch(interaction.client.user.id);
+			const member = interaction.member;
+
+			if (member.roles.highest.position >= botMember.roles.highest.position) {
+				return interaction.reply({ content: 'I cannot link your account because you have a higher or equal role than me.', ephemeral: true });
+			}
+
 			const existingTag = await Tags.findOne({ where: { discord_id: discordId, guild_id: guildId } });
 
 			if (existingTag) {
