@@ -18,7 +18,7 @@ module.exports = {
 
         try {
             await GuildSettings.upsert({ guild_id: guildId, temp_channel_id: channel.id });
-            await interaction.reply(`The temporary channel lobby has been set to **${channel.name}**.`);
+            await interaction.reply({ content: `The temporary channel lobby has been set to **${channel.name}**.`, ephemeral: true });
         } catch (error) {
             console.error('Error setting temp channel:', error);
             await interaction.reply({ content: 'There was an error while setting the temporary channel. Please try again later.', ephemeral: true });

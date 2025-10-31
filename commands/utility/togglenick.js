@@ -19,8 +19,9 @@ module.exports = {
 
 			if (tag) {
 				await tag.update({ display_license: display });
-				await interaction.reply(`Your nickname will now ${display ? 'show' : 'hide'} your iRacing license information.`);
-			} else {
+				await interaction.reply({ content: `Your nickname will now ${display ? 'show' : 'hide'} your iRacing license information.`, ephemeral: true });
+			}
+			else {
 				await interaction.reply({ content: 'You do not have an iRacing ID linked. Please use the /link command first.', ephemeral: true });
 			}
 		}

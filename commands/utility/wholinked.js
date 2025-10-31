@@ -12,20 +12,21 @@ module.exports = {
 			const tagList = await Tags.findAll({ where: { guild_id: guildId } });
 
 			if (tagList.length === 0) {
-				return interaction.reply('No users in this server have linked their iRacing ID.');
+				return interaction.reply({ content: 'No users in this server have linked their iRacing ID.', ephemeral: true });
 			}
 
-            const promises = tagList.map(async (tag) => {
-                const member = await interaction.guild.members.fetch(tag.discord_id).catch(() => null);
-                if (member) {
-                    return `${member.user.tag} (iRacing ID: ${tag.iRacing_ID})`;
-                } else {
-                    return `User with ID ${tag.discord_id} (iRacing ID: ${tag.iRacing_ID}) is no longer in the server.`;
-                }
-            });
+			const promises = tagList.map(async (tag) => {
+				const member = await interaction.guild.members.fetch(tag.discord_id).catch(() => null);
+				if (member) {
+					return `${member.user.tag} (iRacing ID: ${tag.iRacing_ID})`;
+				}
+				else {
+					return `User with ID ${tag.discord_id} (iRacing ID: ${tag.iRacing_ID}) is no longer in the server.`;
+				}
+			});
 
-            const memberList = await Promise.all(promises);
-			await interaction.reply(`**Users with linked iRacing IDs:**\n${memberList.join('\n')}`);
+			const memberList = await Promise.all(promises);
+			await interaction.reply({ content: `**Users with linked iRacing IDs:**\n${memberList.join('\n')}`, ephemeral: true });
 		}
 		catch (error) {
 			console.error('Error listing linked users:', error);

@@ -12,7 +12,7 @@ module.exports = {
 		)
 		.addBooleanOption(option =>
 			option.setName('display_license')
-				.setDescription('Whether to display your iRacing license in your nickname. Defaults to true.')
+				.setDescription('Whether to display your iRacing license in your nickname. Defaults to true.'),
 		),
 	async execute(interaction) {
 		const iracingId = interaction.options.getString('iracing_id');
@@ -42,12 +42,12 @@ module.exports = {
 					replyMessage += ` Your license display preference has been updated to ${displayLicense}.`;
 				}
 
-				await interaction.reply(replyMessage);
+				await interaction.reply({ content: replyMessage, ephemeral: true });
 			}
 			else {
 				const displayLicenseValue = displayLicense ?? true;
 				await Tags.create({ discord_id: discordId, guild_id: guildId, iRacing_ID: iracingId, display_license: displayLicenseValue });
-				await interaction.reply(`Your Discord account has been linked with iRacing ID: ${iracingId}. Your license display preference is set to ${displayLicenseValue}.`);
+				await interaction.reply({ content: `Your Discord account has been linked with iRacing ID: ${iracingId}. Your license display preference is set to ${displayLicenseValue}.`, ephemeral: true });
 			}
 		}
 		catch (error) {

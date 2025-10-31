@@ -16,10 +16,10 @@ module.exports = {
 			if (existingTag) {
 				// Update the existing record
 				await existingTag.destroy();
-				await interaction.reply('Your iRacing ID has been unlinked.');
+				await interaction.reply({ content: 'Your iRacing ID has been unlinked.', ephemeral: true });
 			}
 			else {
-				await interaction.reply('Your Discord account is not linked with any iRacing ID.');
+				await interaction.reply({ content: 'Your Discord account is not linked with any iRacing ID.', ephemeral: true });
 			}
 		}
 		catch (error) {
