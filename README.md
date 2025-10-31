@@ -1,37 +1,34 @@
-# Ace-Bot
+# Ace Bot
 
-Ace Motorsports iRacing Discord bot
+A Discord.js bot for iRacing Ace Motorsports.
 
 ## Features
 
-Ace-Bot is designed to integrate your iRacing and Discord experience seamlessly. Here are some of the key features:
+*   **iRacing Account Linking:** Link your Discord account to your iRacing account to get a server nickname that reflects your iRacing license and iRating.
+*   **Automatic Nickname Updates:** Nicknames are automatically updated every 30 minutes to ensure they are always up-to-date with your latest iRacing stats.
+*   **Dynamic Race Rooms:** Automatically creates temporary voice channels when a user joins a designated lobby channel. These rooms are numbered sequentially and are automatically deleted when they are empty.
+*   **Admin Configuration:** Server admins can use slash commands to configure the bot for their server.
 
-*   **Dynamic Nicknames:** The bot automatically updates user nicknames to display their iRacing name, license class, safety rating, and iRating (e.g., `First L. | A 4.99 SR 2.1k IR`). Users can control this feature with the `/togglenick` command.
-*   **Temporary Voice Channels:** Users can create temporary voice channels, which are automatically deleted when empty, keeping your voice channel list clean and organized.
-*   **iRacing Account Linking:** Securely link your iRacing account to your Discord profile to enable the features above.
+## Getting Started
 
-## Inviting the Bot to Your Server
+1.  **Invite the Bot:** Invite the bot to your Discord server using this link: `https://discord.com/oauth2/authorize?client_id=1433716689723326486`
+2.  **Configuration:** Once the bot is in your server, an admin can use the following commands to set it up:
+    *   `/set-temp-channel <channel>`: Sets the voice channel that users can join to create a temporary race room.
+    *   `/set-temp-category <category>`: Sets the category where the new temporary race rooms will be created.
 
-To add Ace-Bot to your Discord server, you will need to use its OAuth2 URL.
+## Nickname Format
 
-**Required Permissions:**
+When you link your iRacing account, your server nickname will be automatically updated to the following format:
 
-When you invite the bot, ensure that the following permissions are granted for it to function correctly:
+`First L. | C 4.20 SR 1.8k IR`
 
-*   Connect
-*   Manage Channels
-*   Manage Nicknames
-*   Manage Roles
-*   Move Members
-*   Send Messages
-*   Use Slash Commands
-*   Use Voice Activity
-*   View Channels
+*   **First L.:** Your first name and last initial.
+*   **C:** Your current road license class (R, D, C, B, A).
+*   **4.20 SR:** Your current safety rating, to two decimal places.
+*   **1.8k IR:** Your current iRating. If your iRating is over 999, it will be displayed in thousands (e.g., 1.8k, 2.5k, 10.2k).
 
-## Slash Commands
+## User Commands
 
-Ace-Bot uses slash commands for all of its features. Here are the available commands:
-
-*   `/link`: Link your iRacing account to your Discord account. You can also set your preference for displaying your license information in your nickname.
-*   `/togglenick`: Show or hide your iRacing license information in your nickname.
-*   `/unlink`: Unlink your iRacing account from your Discord account.
+*   `/link <iracing_id>`: Links your Discord account to your iRacing account. Your iRacing ID is the number found in the top right of your iRacing profile.
+*   `/unlink`: Unlinks your Discord account from your iRacing account.
+*   `/togglenick`: Toggles your server nickname between your iRacing stats and your original Discord username.

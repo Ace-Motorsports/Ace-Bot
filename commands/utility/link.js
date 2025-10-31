@@ -18,9 +18,10 @@ module.exports = {
 		const iracingId = interaction.options.getString('iracing_id');
 		const displayLicense = interaction.options.getBoolean('display_license');
 		const discordId = interaction.user.id;
+		const guildId = interaction.guild.id;
 
 		try {
-			const existingTag = await Tags.findOne({ where: { discord_id: discordId } });
+			const existingTag = await Tags.findOne({ where: { discord_id: discordId, guild_id: guildId } });
 
 			if (existingTag) {
 				const updateData = { iRacing_ID: iracingId };
@@ -38,7 +39,7 @@ module.exports = {
 			}
 			else {
 				const displayLicenseValue = displayLicense ?? true;
-				await Tags.create({ discord_id: discordId, iRacing_ID: iracingId, display_license: displayLicenseValue });
+				await Tags.create({ discord_id: discordId, guild_id: guildId, iRacing_ID: iracingId, display_license: displayLicenseValue });
 				await interaction.reply(`Your Discord account has been linked with iRacing ID: ${iracingId}. Your license display preference is set to ${displayLicenseValue}.`);
 			}
 		}
