@@ -105,7 +105,7 @@ async function refreshUsers(client) {
             }
 
             if (member) {
-                console.log(`[RefreshUsers] Processing member: ${member.user.tag} (iRacing ID: ${iracingId})`);
+                console.log(`\n[RefreshUsers] Processing member: ${member.user.tag} (iRacing ID: ${iracingId})`);
                 let response = await axiosInstance.get('/data/member/get', {
                     params: { cust_ids: iracingId, include_licenses: true },
                 });
@@ -150,30 +150,43 @@ async function refreshUsers(client) {
                     case 5: roleName = 'Class-A'; break;
                     default: roleName = null;
                 }
+
+                // --- Start Temporary Verbose Logging ---
+                console.log(`[RefreshUsers] DATA COMPARISON for ${member.user.tag}:`);
+                console.log(`  - Current Nick:   ${member.nickname}`);
+                console.log(`  - Generated Nick: ${nick}`);
+                console.log(`  - Needs Nick Update? ${(member.nickname !== nick)}`);
+
+                const expectedRole = roleName ? guild.roles.cache.find(r => r.name === roleName) : null;
+                const hasCorrectRole = expectedRole && member.roles.cache.has(expectedRole.id);
+                const currentLicenseRole = member.roles.cache.find(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
+
+                console.log(`  - Current Role:     ${currentLicenseRole ? currentLicenseRole.name : 'None'}`)
+                console.log(`  - Expected Role:    ${roleName || 'None'}`);
+                console.log(`  - Needs Role Update? ${!hasCorrectRole && !!expectedRole}`);
+                // --- End Temporary Verbose Logging ---
                 
                 if (member.nickname !== nick) {
                     await member.setNickname(nick);
                     console.log(`[RefreshUsers] Set nickname for ${member.user.tag} to "${nick}"`);
                 }
 
-                if (roleName) {
-                    const role = guild.roles.cache.find(r => r.name === roleName);
-                    if (role && !member.roles.cache.has(role.id)) {
-                        const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
-                        if (rolesToRemove.size > 0) {
-                            await member.roles.remove(rolesToRemove);
-                            console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
-                        }
-                        await member.roles.add(role);
-                        console.log(`[RefreshUsers] Assigned role ${roleName} to ${member.user.tag}`);
+                if (expectedRole && !hasCorrectRole) {
+                    const rolesToRemove = member.roles.cache.filter(r => ['Rookie', 'Class-A', 'Class-B', 'Class-C', 'Class-D'].includes(r.name));
+                    if (rolesToRemove.size > 0) {
+                        await member.roles.remove(rolesToRemove);
+                        console.log(`[RefreshUsers] Removed old license roles from ${member.user.tag}.`);
                     }
+                    await member.roles.add(expectedRole);
+                    console.log(`[RefreshUsers] Assigned role ${expectedRole.name} to ${member.user.tag}`);
                 }
+
             } else {
                 console.log(`[RefreshUsers] Member with Discord ID ${discordId} not found. Deleting tag.`);
                 await Tags.destroy({ where: { discord_id: discordId } });
             }
         }
-        console.log('[RefreshUsers] User refresh process finished.');
+        console.log('\n[RefreshUsers] User refresh process finished.');
     } catch (error) {
         console.error('[RefreshUsers] CRITICAL ERROR during refresh process:', error.response ? error.response.data : error.message);
         if (error.stack) {
