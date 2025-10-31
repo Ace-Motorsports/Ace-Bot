@@ -148,6 +148,12 @@ async function refreshUsers(client) {
                           last_name = Array.from(last_name)[0].toUpperCase();
                           nick = `${first_name} ${last_name}. | ${licenseClass} ${sr.toFixed(2)} SR ${ir} IR`;
                       }
+                    } else {
+                        const names = name.split(' ');
+                        const first_name = names[0];
+                        let last_name = names[names.length - 1];
+                        last_name = Array.from(last_name)[0].toUpperCase();
+                        nick = `${first_name} ${last_name}.`;
                     }
 
                     if (member.nickname !== nick) {
