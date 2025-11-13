@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
 			unique: 'compositeIndex',
 		},
 		iRacing_ID: {
-			type: DataTypes.STRING,
+			type: DataTypes.INTEGER,
 			allowNull: false,
 		},
 		display_license: {
