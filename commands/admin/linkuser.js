@@ -9,7 +9,7 @@ module.exports = {
 			option.setName('user')
 				.setDescription('The user to link.')
 				.setRequired(true))
-		.addStringOption(option =>
+		.addIntegerOption(option =>
 			option.setName('iracing_id')
 				.setDescription("The user's iRacing ID")
 				.setRequired(true),
@@ -22,7 +22,7 @@ module.exports = {
 
 	async execute(interaction) {
 		const user = interaction.options.getUser('user');
-		const iracingId = interaction.options.getString('iracing_id');
+		const iracingId = interaction.options.getInteger('iracing_id');
 		const displayLicense = interaction.options.getBoolean('display_license');
 		const discordId = user.id;
 		const guildId = interaction.guild.id;
