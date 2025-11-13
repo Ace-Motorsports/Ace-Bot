@@ -5,7 +5,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('link')
 		.setDescription('Link your Discord account with your iRacing ID.')
-		.addStringOption(option =>
+		.addIntegerOption(option =>
 			option.setName('iracing_id')
 				.setDescription('Your iRacing ID')
 				.setRequired(true),
@@ -15,7 +15,7 @@ module.exports = {
 				.setDescription('Whether to display your iRacing license in your nickname. Defaults to true.'),
 		),
 	async execute(interaction) {
-		const iracingId = interaction.options.getString('iracing_id');
+		const iracingId = interaction.options.getInteger('iracing_id');
 		const displayLicense = interaction.options.getBoolean('display_license');
 		const discordId = interaction.user.id;
 		const guildId = interaction.guild.id;
